@@ -1,6 +1,6 @@
 {
   "name": "simple-redis-mutex",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mutex lock implemented using redis",
   "main": "index.js",
   "scripts": {
