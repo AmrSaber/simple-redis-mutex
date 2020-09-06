@@ -14,7 +14,7 @@ const crypto = require('crypto');
  */
 async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis } = {}) {
   const lockValue = crypto.randomBytes(50).toString('hex');
-  const lockKey = `@simple-redis-lock:lock-${lockName}`;
+  const lockKey = `@simple-redis-mutex:lock-${lockName}`;
 
   const acquireLock = new Promise((resolve, reject) => {
     let failTimeoutId = null;
