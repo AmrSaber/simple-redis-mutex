@@ -8,8 +8,11 @@
     "test:watch": "jest --watch",
     "lint": "eslint index.js unit.test.js"
   },
-  "author": "Amr Saber",
-  "repository": "https://github.com/coligo-tech/simple-redis-lock",
+  "author": {
+    "name": "Amr Saber",
+    "email": "amr.m.saber.mail@gmail.com"
+  },
+  "repository": "https://github.com/coligo-tech/simple-redis-mutex",
   "license": "ISC",
   "peerDependencies": {
     "ioredis": ">=4.0.0"
