@@ -37,13 +37,13 @@ To acquire the lock you just call the `lock` function exported from the package,
 ## API
 The package exports one named function `lock`, that acquires the lock and returns another function that releases the lock. The API for the `lock` function is as follows ...
 
-`lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis })`
-- **client**: [ioredis](https://www.npmjs.com/package/ioredis) client.
-- **lockName**: This is the name of the lock, and this is what distinguishes one lock from another, so that the part that needs mutual exclusion would always require a lock with the same name to be acquired by any process that attempts to enter that part. The key in redis database will be derived from this name.
-- **retryTimeMillis**: (default `100`) This defines how much should a process wait before trying to acquire the same lock again, provided time is milliseconds, this time cannot be null.
-- **timeoutMillis**: (default `null`) This defines the expiry time of the lock after it's acquired, so after that expiry time another process can acquire the lock even if the current holder did not release it, time provided is in milliseconds, `null` timeout value means that the lock will never expire.
-- **failAfterMillis**: (default `null`) This defines the maximum time a process should wait for the lock until it can acquire it, when this time has passes and the process has not acquired the lock yet, the function will throw an Error saying that the lock could not be acquired in the given time, the provided time is in milliseconds, `null` value means that the function will not fail until it has acquired the lock.
-- Return type: `Promise<Function>` returns the `unlock` function, that is an async function, and should be called to release the lock.
+`lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis }): Promise<Function>`
+- **client** <ioredis client>: [ioredis](https://www.npmjs.com/package/ioredis) client.
+- **lockName** <String>: This is the name of the lock, and this is what distinguishes one lock from another, so that the part that needs mutual exclusion would always require a lock with the same name to be acquired by any process that attempts to enter that part. The key in redis database will be derived from this name.
+- **retryTimeMillis** <Number>: (default `100`) This defines how much should a process wait before trying to acquire the same lock again, provided time is milliseconds, this time cannot be null.
+- **timeoutMillis** <Number>: (default `null`) This defines the expiry time of the lock after it's acquired, so after that expiry time another process can acquire the lock even if the current holder did not release it, time provided is in milliseconds, `null` timeout value means that the lock will never expire.
+- **failAfterMillis** <Number>: (default `null`) This defines the maximum time a process should wait for the lock until it can acquire it, when this time has passes and the process has not acquired the lock yet, the function will throw an Error saying that the lock could not be acquired in the given time, the provided time is in milliseconds, `null` value means that the function will not fail until it has acquired the lock.
+- Return type <`Promise<Function>`>: The `unlock` function, that is an async function, and should be called to release the lock.
 
 ## Notes
 - This package has **Peer Dependency** on [ioredis](https://github.com/luin/ioredis).
