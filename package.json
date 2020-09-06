@@ -5,10 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "eslint index.js unit.test.js"
   },
   "author": "Amr Saber",
+  "repository": "https://github.com/coligo-tech/simple-redis-lock",
   "license": "ISC",
+  "peerDependencies": {
+    "ioredis": ">=4.0.0"
+  },
   "devDependencies": {
     "@types/ioredis": "^4.17.4",
     "@types/jest": "^26.0.13",
@@ -25,5 +30,8 @@
     "mutex",
     "lock",
     "expire"
-  ]
+  ],
+  "engines": {
+    "node": ">=8.2.1"
+  }
 }
