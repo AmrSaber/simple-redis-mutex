@@ -1,4 +1,4 @@
-# Simple Redis Lock
+# Simple Redis Mutex
 
 Implements mutex lock using redis as described in [redis docs](https://redis.io/commands/set#patterns). The term **simple** is opposed to the more complex **Redlock**, that was also proposed by [redis docs](https://redis.io/topics/distlock) for use in case of distributed redis instances. 
 
@@ -8,12 +8,12 @@ This implementation of redis lock introduces some fine tuning features to the lo
 Install the package using `npm`.
 
 ```bash
-npm i simple-redis-lock
+npm i simple-redis-mutex
 ```
 
 ## Examples
 ```js
-const { lock } = require('simple-redis-lock');
+const { lock } = require('simple-redis-mutex');
 const Redis = require('ioredis');
 
 // Connect to redis using ioredis

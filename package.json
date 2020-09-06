@@ -1,5 +1,5 @@
 {
-  "name": "simple-redis-lock",
+  "name": "simple-redis-mutex",
   "version": "1.0.0",
   "description": "Mutex lock implemented using redis",
   "main": "index.js",
