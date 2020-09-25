@@ -1,5 +1,33 @@
 # Simple Redis Mutex
 
+<p>
+  <!-- NPM version badge -->
+  <a href="https://www.npmjs.com/package/simple-redis-mutex">
+    <img src="https://img.shields.io/npm/v/simple-redis-mutex" alt="version"/>
+  </a>
+
+  <!-- Github "Test Main" workflow status -->
+  <a href="https://github.com/coligo-tech/simple-redis-mutex/actions">
+    <img src="https://github.com/coligo-tech/simple-redis-mutex/workflows/Test%20Master/badge.svg?branch=master" alt="Test Master Status"/>
+  </a>
+
+
+  <!-- Github "Test Dev" workflow status -->
+  <a href="https://github.com/coligo-tech/simple-redis-mutex/actions">
+    <img src="https://github.com/coligo-tech/simple-redis-mutex/workflows/Test%20Dev/badge.svg?branch=dev" alt="Test Dev Status"/>
+  </a>
+
+  <!-- NPM weekly downloads -->
+  <a href="https://www.npmjs.com/package/simple-redis-mutex">
+    <img src="https://img.shields.io/npm/dw/simple-redis-mutex" alt="weekly downloads"/>
+  </a>
+
+  <!-- License -->
+  <a href="https://github.com/coligo-tech/simple-redis-mutex/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/simple-redis-mutex" alt="license"/>
+  </a>
+</p>
+
 Implements mutex lock using redis as described in [redis docs](https://redis.io/commands/set#patterns). The term **simple** is opposed to the more complex **Redlock**, that was also proposed by [redis docs](https://redis.io/topics/distlock) for use in case of distributed redis instances. 
 
 This implementation of redis lock introduces some fine tuning features to the lock such as lock expire time, and acquire retry time, and acquire timeout (all described below).
