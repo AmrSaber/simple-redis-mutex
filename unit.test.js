@@ -10,13 +10,11 @@ describe('Lock tests', () => {
    */
   let redis;
 
-  beforeAll(() => {
-    redis = new Redis();
-  });
+  beforeAll(() => { redis = new Redis(); });
 
-  afterEach(async () => {
-    await redis.flushdb();
-  });
+  afterEach(async () => { await redis.flushdb(); });
+
+  afterAll(() => { redis.disconnect(); });
 
   describe('Locking functionality', () => {
     let counter = 0;
