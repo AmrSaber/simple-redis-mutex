@@ -65,7 +65,10 @@ To acquire the lock you just call the `lock` function exported from the package,
 ## API
 The package exports one named function `lock`, that acquires the lock and returns another function that releases the lock. The API for the `lock` function is as follows ...
 
-`lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis }): Promise<Function>`
+```js
+lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis }): Promise<Function>
+```
+
 - **client** \<ioredis client>: [ioredis](https://www.npmjs.com/package/ioredis) client.
 - **lockName** \<String>: This is the name of the lock, and this is what distinguishes one lock from another, so that the part that needs mutual exclusion would always require a lock with the same name to be acquired by any process that attempts to enter that part. The key in redis database will be derived from this name.
 - **retryTimeMillis** \<Number>: (default `100`) This defines how much should a process wait before trying to acquire the same lock again, provided time is milliseconds, this time cannot be null.
@@ -76,4 +79,4 @@ The package exports one named function `lock`, that acquires the lock and return
 ## Notes
 - This package has **Peer Dependency** on [ioredis](https://github.com/luin/ioredis).
 - It's taken into account the case that process A acquires the lock, then it expires, then process B acquires the lock. When process A try to release the lock, it will not be released, as it's now acquired by B.
-- The same lock can be acquired with different options each time, so one time it can have an expiry time, and the next acquire it can lock indefinitely, the same with all the other options
+- The same lock can be acquired with different options each time, so one time it can have an expiry time, and the next acquire it can lock indefinitely, the same with all the other options, although this behavior is not encouraged as it can be hard to debug.

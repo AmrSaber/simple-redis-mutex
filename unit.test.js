@@ -10,7 +10,8 @@ describe('Lock tests', () => {
    */
   let redis;
 
-  beforeAll(() => { redis = new Redis(); });
+  // If REDIS_URI variable is null, will default to localhost
+  beforeAll(() => { redis = new Redis(process.env.REDIS_URI); });
 
   afterEach(async () => { await redis.flushdb(); });
 
@@ -20,10 +21,10 @@ describe('Lock tests', () => {
     let counter = 0;
 
     async function unsafeIncrement() {
-      await delay(faker.random.number({ min: 10, max: 50 }));
+      await delay(faker.datatype.number({ min: 10, max: 50 }));
       const counterValue = counter;
 
-      await delay(faker.random.number({ min: 10, max: 50 }));
+      await delay(faker.datatype.number({ min: 10, max: 50 }));
       counter = counterValue + 1;
     }
 
@@ -95,6 +96,12 @@ describe('Lock tests', () => {
 
       expect(timeAfterLock - timeBeforeLock).toBeGreaterThanOrEqual(200);
       expect(timeAfterLock - timeBeforeLock).toBeLessThanOrEqual(220);
+
+      await delay(1000);
+
+      // Assert that the lock function is no longer attempting to acquire the lock asynchronously
+      const lockValue = await redis.get('@simple-redis-mutex:lock-fail-test');
+      expect(lockValue).toBeNull();
     });
   });
 });
