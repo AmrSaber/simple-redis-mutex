@@ -95,6 +95,12 @@ describe('Lock tests', () => {
 
       expect(timeAfterLock - timeBeforeLock).toBeGreaterThanOrEqual(200);
       expect(timeAfterLock - timeBeforeLock).toBeLessThanOrEqual(220);
+
+      await delay(1000);
+
+      // Assert that the lock function is no longer attempting to acquire the lock asynchronously
+      const lockValue = await redis.get('@simple-redis-mutex:lock-fail-test');
+      expect(lockValue).toBeNull();
     });
   });
 });

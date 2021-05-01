@@ -18,6 +18,7 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
 
   const acquireLock = new Promise((resolve, reject) => {
     let failTimeoutId = null;
+    let attemptTimeoutId = null;
 
     // Try to acquire the lock, and try again after a while on failure
     function attempt() {
@@ -36,7 +37,7 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
           if (failTimeoutId != null) { clearTimeout(failTimeoutId); }
           resolve();
         } else {
-          setTimeout(attempt, retryTimeMillis);
+          attemptTimeoutId = setTimeout(attempt, retryTimeMillis);
         }
       });
     }
@@ -44,7 +45,10 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
     // Set time out to fail acquiring the lock if it's sent
     if (failAfterMillis != null) {
       failTimeoutId = setTimeout(
-        () => { reject(new Error(`Lock could not be acquire for ${failAfterMillis} millis`)); },
+        () => {
+          if (attemptTimeoutId != null) { clearTimeout(attemptTimeoutId); }
+          reject(new Error(`Lock could not be acquire for ${failAfterMillis} millis`));
+        },
         failAfterMillis,
       );
     }
