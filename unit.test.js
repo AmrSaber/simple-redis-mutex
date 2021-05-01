@@ -20,10 +20,10 @@ describe('Lock tests', () => {
     let counter = 0;
 
     async function unsafeIncrement() {
-      await delay(faker.random.number({ min: 10, max: 50 }));
+      await delay(faker.datatype.number({ min: 10, max: 50 }));
       const counterValue = counter;
 
-      await delay(faker.random.number({ min: 10, max: 50 }));
+      await delay(faker.datatype.number({ min: 10, max: 50 }));
       counter = counterValue + 1;
     }
 
