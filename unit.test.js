@@ -10,7 +10,8 @@ describe('Lock tests', () => {
    */
   let redis;
 
-  beforeAll(() => { redis = new Redis(); });
+  // If REDIS_URI variable is null, will default to localhost
+  beforeAll(() => { redis = new Redis(process.env.REDIS_URI); });
 
   afterEach(async () => { await redis.flushdb(); });
 

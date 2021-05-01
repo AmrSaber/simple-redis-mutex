@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+
+jobs:
+  run-linter:
+    name: Run linter
+    runs-on: ubuntu-latest
+    container: node:14.16-slim
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  run-tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    container: node:14.16-slim
+
+    services:
+      redis:
+        image: redis:6.2-alpine
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Test
+        env:
+          REDIS_URI: redis://redis:6379
+        run: npm run test
