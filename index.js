@@ -1,17 +1,5 @@
 const crypto = require('crypto');
 
-/**
- * Acquire mutex lock on the given resource name. If the lock is already acquired, wait until it's free and acquire it.
- *
- * @param {import('ioredis').Redis} client
- * @param {String} lockName
- * @param {Object} [options]
- * @param {Number} [options.retryTimeMillis=100]
- * @param {Number} [options.timeoutMillis]
- * @param {Number} [options.failAfterMillis]
- *
- * @returns {Promise<Function>} release function
- */
 async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis } = {}) {
   const lockValue = crypto.randomBytes(50).toString('hex');
   const lockKey = `@simple-redis-mutex:lock-${lockName}`;
@@ -56,14 +44,13 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
     attempt();
   });
 
-  /**
-   * Release the lock only if it has the same lockValue as acquireLock sets it.
-   * This will prevent the release of an already released token.
-   *
-   * @returns {Promise}
-   */
   function releaseLock() {
-    // Script source: https://redis.io/commands/set#patterns - Redis official docs
+    /*
+     * Release the lock only if it has the same lockValue as acquireLock sets it.
+     * This will prevent the release of an already released lock.
+     *
+     * Script source: https://redis.io/commands/set#patterns - Redis official docs
+     */
     const luaReleaseScript = `
       if redis.call("get", KEYS[1]) == ARGV[1]
       then
@@ -73,7 +60,8 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
       end
     `;
 
-    return client.eval(luaReleaseScript, 1, lockKey, lockValue);
+    // After calling the script, make sure to return void promise.
+    return client.eval(luaReleaseScript, 1, lockKey, lockValue).then(() => {});
   }
 
   await acquireLock;
