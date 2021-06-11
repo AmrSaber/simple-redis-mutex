@@ -49,13 +49,13 @@ redis = new Redis(process.env.REDIS_URI);
 
 async function someFunction() {
   // Acquire the lock, by passing redis client and the resource name (all settings are optional)
-  const unlock = await lock(redis, 'resource-name');
+  const release = await lock(redis, 'resource-name');
   
   // Do some operations that require mutex lock
   await doSomeCriticalOperations();
   
   // Release the lock
-  await unlock();
+  await release();
 }
 ```
 
