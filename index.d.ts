@@ -1,4 +1,4 @@
-import { Redis } from 'ioredis';
+import { Redis, Cluster } from 'ioredis';
 
 /**
  * Release the lock only if it has the same lockValue as acquireLock sets it.
@@ -9,7 +9,7 @@ type ReleaseFunction = () => Promise<void>;
 interface acquireOptions {
   /**
    * Time interval at which attempt to acquire the lock.
-   * 
+   *
    * @default 100
    */
   retryTimeMillis?: number;
@@ -28,15 +28,15 @@ interface acquireOptions {
 /**
  * Acquire mutex lock on the given resource name.
  * If the lock is already acquired, wait until it's free and acquire it.
- * 
+ *
  * @param client ioredis instance.
  * @param lockName the name of the lock to be acquired.
  * @param options lock acquire options.
- * 
+ *
  * @returns a promise that resolves with release function.
  */
 export function lock(
-  client: Redis,
+  client: Redis | Cluster,
   lockName: string,
   options: acquireOptions
 ): Promise<ReleaseFunction>;
