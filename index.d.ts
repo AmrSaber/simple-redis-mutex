@@ -23,6 +23,12 @@ interface acquireOptions {
    * Time span after which will not attempt to acquire the lock, and the `lock` function will fail.
    */
   failAfterMillis?: number;
+
+  /**
+   * Whether or not to apply queueing fifo to the blocked instances
+   * if this is true, then the first one to wait will be the first one to be released and so on.
+   */
+  fifo?: boolean;
 }
 
 /**
