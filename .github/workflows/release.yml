@@ -26,6 +26,7 @@ jobs:
         run: npm run test
 
       # Only release if tests pass
-      - uses: JS-DevTools/npm-publish@v1
+      - name: Release
+        uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}
