@@ -71,7 +71,11 @@ To acquire the lock you just call the `lock` function exported from the package,
 The package exports one named function `lock`, that acquires the lock and returns another function that releases the lock. The API for the `lock` function is as follows ...
 
 ```js
-lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis, fifo }): Promise<Function>
+lock(
+  client,
+  lockName,
+  { retryTimeMillis = 100, timeoutMillis, failAfterMillis, fifo }
+): Promise<Function>
 ```
 
 - **client** \<ioredis client>: [ioredis](https://www.npmjs.com/package/ioredis) client.
