@@ -8,10 +8,25 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    container: node:14.16-slim
+
+    services:
+      redis:
+        image: redis:6.2-alpine
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - uses: JS-DevTools/npm-publish@v1
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Test
+        env:
+          REDIS_URI: redis://redis:6379
+        run: npm run test
+
+      # Only release if tests pass
+      - name: Release
+        uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}

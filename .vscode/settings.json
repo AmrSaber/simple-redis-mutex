@@ -1,9 +1,14 @@
 {
   "cSpell.words": [
     "Coligo",
-    "Millis",
-    "Redlock",
     "flushdb",
-    "mutex"
-  ]
+    "Millis",
+    "mutex",
+    "PEXPIRE",
+    "Redlock"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "eslint.validate": ["javascript"]
 }
