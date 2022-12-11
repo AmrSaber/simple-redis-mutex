@@ -32,7 +32,9 @@
     "redis",
     "mutex",
     "lock",
-    "expire"
+    "expire",
+    "fifo",
+    "queue"
   ],
   "engines": {
     "node": ">=8.2.1"
