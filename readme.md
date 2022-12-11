@@ -7,13 +7,13 @@
   </a>
 
   <!-- Github "Test Main" workflow status -->
-  <a href="https://github.com/coligo-tech/simple-redis-mutex/actions">
-    <img src="https://github.com/coligo-tech/simple-redis-mutex/workflows/Release/badge.svg?branch=master" alt="Release Status"/>
+  <a href="https://github.com/AmrSaber/simple-redis-mutex/actions">
+    <img src="https://github.com/AmrSaber/simple-redis-mutex/workflows/Release/badge.svg?branch=master" alt="Release Status"/>
   </a>
 
   <!-- Github "Test Dev" workflow status -->
-  <a href="https://github.com/coligo-tech/simple-redis-mutex/actions">
-    <img src="https://github.com/coligo-tech/simple-redis-mutex/workflows/Test%20Dev/badge.svg?branch=dev" alt="Test Dev Status"/>
+  <a href="https://github.com/AmrSaber/simple-redis-mutex/actions">
+    <img src="https://github.com/AmrSaber/simple-redis-mutex/workflows/Test%20Dev/badge.svg?branch=dev" alt="Test Dev Status"/>
   </a>
 
   <!-- NPM weekly downloads -->
@@ -22,7 +22,7 @@
   </a>
 
   <!-- License -->
-  <a href="https://github.com/coligo-tech/simple-redis-mutex/blob/master/LICENSE">
+  <a href="https://github.com/AmrSaber/simple-redis-mutex/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/simple-redis-mutex" alt="license"/>
   </a>
 </p>
