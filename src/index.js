@@ -1,7 +1,16 @@
 const crypto = require('crypto');
-const { acquireScript, releaseScript, releaseWithFifoScript, acquireWithFifoScript } = require('./lua');
+const {
+  acquireScript,
+  releaseScript,
+  releaseWithFifoScript,
+  acquireWithFifoScript,
+} = require('./lua');
 
-async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, failAfterMillis, fifo = false } = {}) {
+async function lock(
+  client,
+  lockName,
+  { retryTimeMillis = 100, timeoutMillis, failAfterMillis, fifo = false } = {},
+) {
   const lockValue = crypto.randomBytes(50).toString('hex');
 
   const lockKey = `@simple-redis-mutex:lock-${lockName}`;
@@ -9,9 +18,7 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
   const lastOutIdKey = `@simple-redis-mutex:lock-${lockName}:last-out-id`;
 
   let id;
-  if (fifo) {
-    id = await client.incr(nextIdKey);
-  }
+  if (fifo) id = await client.incr(nextIdKey);
 
   const acquireLock = new Promise((resolve, reject) => {
     let failTimeoutId = null;
@@ -20,19 +27,19 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
     // Try to acquire the lock, and try again after a while on failure
     function attempt() {
       let script = acquireScript;
-      if (fifo) { script = acquireWithFifoScript; }
+      if (fifo) {
+        script = acquireWithFifoScript;
+      }
 
       // Try to set the lock if it does not exist, else try again later, also set a timeout for the lock so it expires
       client
-        .eval(
-          script,
-          2, lockKey, lastOutIdKey,
-          lockValue, timeoutMillis, id,
-        )
-        .then(response => {
+        .eval(script, 2, lockKey, lastOutIdKey, lockValue, timeoutMillis, id)
+        .then((response) => {
           if (response === 'OK') {
             // Clear failure timer if it was set
-            if (failTimeoutId != null) { clearTimeout(failTimeoutId); }
+            if (failTimeoutId != null) {
+              clearTimeout(failTimeoutId);
+            }
             resolve();
           } else {
             attemptTimeoutId = setTimeout(attempt, retryTimeMillis);
@@ -42,17 +49,24 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
 
     // Set time out to fail acquiring the lock if it's sent
     if (failAfterMillis != null) {
-      failTimeoutId = setTimeout(
-        () => {
-          if (attemptTimeoutId != null) { clearTimeout(attemptTimeoutId); }
+      failTimeoutId = setTimeout(() => {
+        if (attemptTimeoutId != null) {
+          clearTimeout(attemptTimeoutId);
+        }
 
-          let releasePromise = Promise.resolve();
-          if (fifo) { releasePromise = client.incr(lastOutIdKey); }
+        let releasePromise = Promise.resolve();
+        if (fifo) {
+          releasePromise = client.incr(lastOutIdKey);
+        }
 
-          releasePromise.then(() => { reject(new Error(`Lock "${lockName}" could not be acquired for ${failAfterMillis} millis`)); });
-        },
-        failAfterMillis,
-      );
+        releasePromise.then(() => {
+          reject(
+            new Error(
+              `Lock "${lockName}" could not be acquired for ${failAfterMillis} millis`,
+            ),
+          );
+        });
+      }, failAfterMillis);
     }
 
     attempt();
@@ -60,10 +74,12 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
 
   function releaseLock() {
     let script = releaseScript;
-    if (fifo) { script = releaseWithFifoScript; }
+    if (fifo) script = releaseWithFifoScript;
 
     // After calling the script, make sure to return void promise.
-    return client.eval(script, 2, lockKey, lastOutIdKey, lockValue).then(() => { });
+    return client
+      .eval(script, 2, lockKey, lastOutIdKey, lockValue)
+      .then(() => {});
   }
 
   await acquireLock;

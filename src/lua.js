@@ -66,4 +66,9 @@ else
 end
 `;
 
-module.exports = { acquireScript, acquireWithFifoScript, releaseScript, releaseWithFifoScript };
+module.exports = {
+  acquireScript,
+  acquireWithFifoScript,
+  releaseScript,
+  releaseWithFifoScript,
+};
