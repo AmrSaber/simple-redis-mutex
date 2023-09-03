@@ -91,3 +91,9 @@ lock(
 - This package has **Peer Dependency** on [ioredis](https://github.com/luin/ioredis).
 - It's taken into account the case that process A acquires the lock, then it expires, then process B acquires the lock. When process A try to release the lock, it will not be released, as it's now acquired by B.
 - The same lock can be acquired with different options each time, so one time it can have an expiry time, and the next acquire it can lock indefinitely, the same with all the other options, although this behavior is not encouraged as it can be hard to debug.
+
+## Contribution
+
+You are welcome to [open a ticket](https://github.com/AmrSaber/simple-redis-mutex/issues) anytime, if you find a bug or have a feature request.
+
+Also feel free to create a PR to **dev** branch for bug fixes or feature suggestions.
