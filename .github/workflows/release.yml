@@ -8,7 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: node:14.16-slim
+    container: node:18.17-slim
 
     services:
       redis:
