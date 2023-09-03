@@ -49,7 +49,7 @@ async function lock(client, lockName, { retryTimeMillis = 100, timeoutMillis, fa
           let releasePromise = Promise.resolve();
           if (fifo) { releasePromise = client.incr(lastOutIdKey); }
 
-          releasePromise.then(() => { reject(new Error(`Lock could not be acquire for ${failAfterMillis} millis`)); });
+          releasePromise.then(() => { reject(new Error(`Lock "${lockName}" could not be acquired for ${failAfterMillis} millis`)); });
         },
         failAfterMillis,
       );
