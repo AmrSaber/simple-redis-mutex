@@ -12,11 +12,17 @@ describe('Lock tests', () => {
   let redis;
 
   // If REDIS_URI variable is null, will default to localhost
-  beforeAll(() => { redis = new Redis(process.env.REDIS_URI); });
+  beforeAll(() => {
+    redis = new Redis(process.env.REDIS_URI);
+  });
 
-  afterEach(async () => { await redis.flushdb(); });
+  afterEach(async () => {
+    await redis.flushdb();
+  });
 
-  afterAll(() => { redis.disconnect(); });
+  afterAll(() => {
+    redis.disconnect();
+  });
 
   describe('Locking functionality', () => {
     let counter = 0;
@@ -38,11 +44,13 @@ describe('Lock tests', () => {
     test('Locks handle race conditions', async () => {
       counter = 0;
 
-      await Promise.all(new Array(20).fill(0).map(async () => {
-        const unlock = await lock(redis, 'test');
-        await unsafeIncrement();
-        await unlock();
-      }));
+      await Promise.all(
+        new Array(20).fill(0).map(async () => {
+          const unlock = await lock(redis, 'test');
+          await unsafeIncrement();
+          await unlock();
+        }),
+      );
 
       expect(counter).toEqual(20);
     });
@@ -90,6 +98,7 @@ describe('Lock tests', () => {
         await lock(redis, lockName, { failAfterMillis: 200 });
         fail('Lock did not fail'); // eslint-disable-line no-undef
       } catch (err) {
+        expect(err.message).toContain(`"${lockName}"`);
         timeAfterLock = new Date().valueOf();
       }
 
@@ -110,7 +119,7 @@ describe('Lock tests', () => {
     let elements = [];
 
     async function unsafeAppend(withLock = false) {
-      const push = async index => {
+      const push = async (index) => {
         await delay(faker.datatype.number({ min: 10, max: 50 }));
         elements.push(index);
       };
@@ -125,9 +134,9 @@ describe('Lock tests', () => {
         let pushPromise = Promise.resolve();
         if (withLock) {
           // eslint-disable-next-line no-loop-func
-          pushPromise = new Promise(resolve => {
+          pushPromise = new Promise((resolve) => {
             lock(redis, lockName, { fifo: true })
-              .then(unlock => push(i).then(() => unlock()))
+              .then((unlock) => push(i).then(() => unlock()))
               .then(resolve);
           });
         } else {
