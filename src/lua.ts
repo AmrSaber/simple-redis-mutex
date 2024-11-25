@@ -1,6 +1,6 @@
 // Check if the lock key is empty, set it with the provided value and timeout (if provided)
 // Otherwise will do nothing (because of NX option) and return nil
-const acquireScript = `
+export const acquireScript = `
 local lockKey = KEYS[1]
 local lockValue, timeout = ARGV[1], ARGV[2]
 
@@ -12,7 +12,7 @@ return redis.call("SET", lockKey, lockValue, "NX")
 `;
 
 // Same as acquire + check that the provided id is the next id to acquire the lock
-const acquireWithFifoScript = `
+export const acquireWithFifoScript = `
 -- Read (and define) provided values
 local lockKey, lastIdKey = KEYS[1], KEYS[2]
 local lockValue, timeout, id = ARGV[1], ARGV[2], ARGV[3]
@@ -39,36 +39,34 @@ return nil
  *
  * Script source: https://redis.io/commands/set#patterns - Redis official docs
  */
-const releaseScript = `
-local lockKey = KEYS[1]
-local lockValue = ARGV[1]
+export const releaseScript = `
+  local lockKey = KEYS[1]
+  local updatesChannel = KEYS[2]
+  local lockValue = ARGV[1]
 
-if redis.call("GET", lockKey) == lockValue
-then
-    return redis.call("DEL", lockKey)
-else
-    return 0
-end
+  if redis.call("GET", lockKey) == lockValue then
+      local delResult = redis.call("DEL", lockKey)
+      redis.call(
+        "PUBLISH",
+        updatesChannel,
+        string.format('{ "key": "%s", "value": "%s" }', lockKey, lockValue)
+      )
+      return delResult
+  else
+      return 0
+  end
 `;
 
 // Same script as without FIFO but increments the last out ID
-const releaseWithFifoScript = `
-local lockKey, lastOutIdKey = KEYS[1], KEYS[2]
-local lockValue = ARGV[1]
+export const releaseWithFifoScript = `
+  local lockKey, lastOutIdKey = KEYS[1], KEYS[2]
+  local lockValue = ARGV[1]
 
-redis.call("INCR", lastOutIdKey)
+  redis.call("INCR", lastOutIdKey)
 
-if redis.call("GET", lockKey) == lockValue
-then
-    return redis.call("DEL", lockKey)
-else
-    return 0
-end
+  if redis.call("GET", lockKey) == lockValue then
+      return redis.call("DEL", lockKey)
+  else
+      return 0
+  end
 `;
-
-module.exports = {
-  acquireScript,
-  acquireWithFifoScript,
-  releaseScript,
-  releaseWithFifoScript,
-};

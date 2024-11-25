@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "checkJs": false,
+
+    // Enable latest features
+    "lib": ["ES2016"],
+    "target": "ES2016",
+    "module": "CommonJS",
+    "moduleDetection": "force",
+
+    // Best practices
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // Bundler options
+    "outDir": "dist"
+  },
+  "exclude": ["node_modules"]
+}
