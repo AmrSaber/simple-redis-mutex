@@ -27,32 +27,49 @@
   </a>
 </p>
 
-Implements mutex lock using redis as described in [redis docs](https://redis.io/commands/set#patterns). The term **simple** is opposed to the more complex **Redlock**, that was also proposed by Redis in their [docs](https://redis.io/topics/distlock) for use in case of distributed redis instances.
+Implements distributed mutex lock using redis as described in [redis docs](https://redis.io/commands/set#patterns). The term **simple** is opposed to the more complex **Redlock**, that was also proposed by Redis in their [docs](https://redis.io/topics/distlock) for use in case of distributed redis instances.
 
-This implementation of redis lock introduces some fine tuning features to the lock such as lock expire time, and acquire retry time, and acquire timeout (all described below).
-
-Also acquiring the lock in a **FIFO** manner is supported by just providing a boolean option `fifo: true`, this will make the lock behave like a mutex queue and allow only one instance to acquire the lock at a time, and once the lock is released the first one to wait for it is the first one to acquire it and so on.
+Locks have timeout (expire time) and fail after options. Also, Redis Pub/Sub is used so that released lock can be immediately acquired by another waiting process instead of depending on polling. Manual polling is still supported though in case lock expires.
 
 ## Install
 
 Install the package using `npm`.
-
 ```bash
 npm i simple-redis-mutex
+```
+
+Or with bun
+```bash
+bun add simple-redis-mutex
 ```
 
 ## Examples
 
 ```js
-const { lock } = require('simple-redis-mutex');
-const Redis = require('ioredis');
+import { lock, tryLock } from 'simple-redis-mutex';
+import { createClient, RedisClientType } from 'redis';
 
-// Connect to redis using ioredis
-redis = new Redis(process.env.REDIS_URI);
+// Connect to redis
+const redis = await createClient()
+  .on('error', (err) => console.log('Redis Client Error', err))
+  .connect();
 
+// Using blocking lock
 async function someFunction() {
   // Acquire the lock, by passing redis client and the resource name (all settings are optional)
   const release = await lock(redis, 'resource-name');
+
+  // Do some operations that require mutex lock
+  await doSomeCriticalOperations();
+
+  // Release the lock
+  await release();
+}
+
+// Using tryLock
+async function someOtherFunction() {
+  const [hasLock, release] = await tryLock(redis, 'resource-name');
+  if (!hasLock) return; // Lock is already acquired
 
   // Do some operations that require mutex lock
   await doSomeCriticalOperations();
@@ -64,36 +81,115 @@ async function someFunction() {
 
 ## Usage
 
-To acquire the lock you just call the `lock` function exported from the package, and pass to it [ioredis](https://github.com/luin/ioredis) client, and the resource name for the lock. You can also pass any optional options to fine-tune the lock as needed (see API below).
+There are 2 methods to acquire a lock:
+- `lock`: which attempts to acquire the lock in a blocking way, if lock is already acquired, it blocks until lock is available.
+- `tryLock`: which attempts to acquire the lock, if lock is already acquired it returns immediately.
 
 ## API
 
-The package exports one named function `lock`, that acquires the lock and returns another function that releases the lock. The API for the `lock` function is as follows ...
-
-```js
-lock(
-  client,
-  lockName,
-  { retryTimeMillis = 100, timeoutMillis, failAfterMillis, fifo }
-): Promise<Function>
+### `lock`
+As per the code:
+```typescript
+/**
+ * Attempts to acquire lock, if lock is already acquired it will block until it can acquire the lock.
+ * Returns lock release function.
+ *
+ * Lock timeout is used to expire the lock if it's not been released before `timeout`.
+ * This is to prevent crashed processes holding the lock indefinitely.
+ *
+ * When a lock is released redis Pub/Sub is used to publish that the lock has been released
+ * so that other processes waiting for the lock can attempt to acquire it.
+ *
+ * Manual polling is also implemented to attempt to acquire the lock in case the holder crashed and did not release the lock.
+ * It is controlled by `pollingInterval`.
+ *
+ * Application logic should not depend on lock timeout and polling interval. They are meant to be a safe net when things fail.
+ * Depending on them is inefficient and an anti-pattern, in such case application logic should be revised and refactored.
+ *
+ * If process fails to acquire the lock before `failAfter` milliseconds, it will throw an error and call `onFail` if provided.
+ * If `failAfter` is not provided, process will block indefinitely waiting for the lock to be released.
+ *
+ * @param redis redis client
+ * @param lockName lock name
+ * @param options lock options
+ * @param options.timeout lock timeout in milliseconds, default: 30 seconds
+ * @param options.pollingInterval how long between manual polling for lock status milliseconds, default: 10 seconds
+ * @param options.failAfter time to fail after if lock is still not acquired milliseconds
+ * @param options.onFail called when failed to acquire lock before `failAfter`
+ * @returns release function
+ */
+function lock(
+  redis: RedisClient,
+  lockName: string,
+  { timeout = DEFAULT_TIMEOUT, pollingInterval = DEFAULT_POLLING_INTERVAL, failAfter, onFail }: LockOptions = {},
+): Promise<ReleaseFunc>
 ```
 
-- **client** \<ioredis client>: [ioredis](https://www.npmjs.com/package/ioredis) client.
-- **lockName** \<String>: This is the name of the lock, and this is what distinguishes one lock from another, so that the part that needs mutual exclusion would always require a lock with the same name to be acquired by any process that attempts to enter that part. The key in redis database will be derived from this name.
-- **retryTimeMillis** \<Number>: (default `100`) This defines how much should a process wait before trying to acquire the same lock again, provided time is milliseconds, this time cannot be null.
-- **timeoutMillis** \<Number>: (default `null`) This defines the expiry time of the lock after it's acquired, so after that expiry time another process can acquire the lock even if the current holder did not release it, time provided is in milliseconds, `null` timeout value means that the lock will never expire.
-- **failAfterMillis** \<Number>: (default `null`) This defines the maximum time a process should wait for the lock until it can acquire it, when this time has passes and the process has not acquired the lock yet, the function will throw an Error saying that the lock could not be acquired in the given time, the provided time is in milliseconds, `null` value means that the function will not fail until it has acquired the lock.
-- **fifo** \<Boolean>: (default `false`) If this is set the waiting instances will be acquire the lock in a FIFO manner, i.e. the first one to wait will be the first one to acquire the lock once it's released and so on.
-- Return type \<`Promise<Function>`>: The `unlock` function, that is an async function, and should be called to release the lock.
+### `tryLock`
+As per the code:
+```typescript
+/**
+ * Try to acquire the lock, if failed will return immediately.
+ * Returns whether or not the lock was acquired, and a release function.
+ *
+ * If the lock was acquired, release function is idempotent,
+ * calling it after the first time has no effect.
+ *
+ * If lock was not acquired, release function is a no-op.
+ *
+ * @param redis redis client
+ * @param lockName lock name
+ * @param options lock options
+ * @param options.timeout lock timeout in milliseconds, default: 30 seconds
+ * @returns whether or not the lock was acquired and release function.
+ */
+function tryLock(
+  redis: RedisClient,
+  lockName: string,
+  { timeout = DEFAULT_TIMEOUT }: TryLockOptions = {},
+): Promise<[boolean, ReleaseFunc]> 
+```
 
 ## Notes
 
-- This package has **Peer Dependency** on [ioredis](https://github.com/luin/ioredis).
-- It's taken into account the case that process A acquires the lock, then it expires, then process B acquires the lock. When process A try to release the lock, it will not be released, as it's now acquired by B.
-- The same lock can be acquired with different options each time, so one time it can have an expiry time, and the next acquire it can lock indefinitely, the same with all the other options, although this behavior is not encouraged as it can be hard to debug.
+### Redis Client
+This package has **Peer Dependency** on [redis](https://www.npmjs.com/package/redis), the is the redis client that must be passed to lock functions.
+
+Same client must always be provided within same process, this is because pub/sub depends on the provided client and its lifecycle.
+
+### Lock options
+The same lock can be acquired with different options each time, and it can be acquired using `lock` and `tryLock` in different places or under different circumstances (actually `lock` internally uses `tryLock` to acquire the lock). You can mix and match as you see fit, but I recommend always using the same options in same places for more consistency and to make debugging easier.
+
+`timeout` and `pollingInterval` have default value and user is not allowed to provide nullish values for those 2. This is for encouraging best practices. If you really want your lock to lock indefinitely for whatever reason, you can force-pass `null` for `timeout` and disable `pollingInterval` by also passing `null` (note that passing `undefined` will use the default values). Typescript will complain but you can just disable it for that line, something like so...
+```typescript
+// @ts-ignore
+await lock(redis, 'some-lock', { timeout: null, pollingInterval: null });
+```
+But I really advice against it. If lock-holding process crashes, there is no way to recover that lock other than removing the redis key manually from redis.
+
+### Lock Release
+Once a lock is released a pub/sub channel is used to notify any process waiting for the lock. This makes waiting for lock more efficient and removes the need for frequent polling to check the status of the lock.
+
+A dedicated subscriber is created and managed in the background to manage subscribing to the pub/sub channel. It is created as a duplicate of provided redis client, and it stops whenever the provided client stops.
+
+Only one subscriber is created at a time. If the client stops and reconnects for whatever reason, then subscriber will stop with it and will reconnect on next lock use.
+
+### Double Releasing
+Once `release` function has been called all following calls are no-op, so same function cannot release the lock again from a different holder.
+
+It's also taken into consideration that an expired lock cannot be released so it does not release the lock from another holder. i.e. if process A acquires the lock, then it expires, then process B acquires the lock. When process A tries to release the lock, it will not be released, as it's now acquired by B.
+
+### Migration from v1.x
+Breaking Changes in v2:
+- Redis client is now `redis` and not `ioredis`
+- options have been renamed:
+  - `timeoutMillis` -> `timeout`
+  - `retryTimeMillis` -> `pollingInterval` -- and it is now only used for expired locks, other wise pub/sub is used with released locks
+  - `failAfterMillis` -> `failAfter`
+- FIFO option has been removed: existing implementation was wrong, it failed on lock-holder crash or failing to acquire the lock, and I could not come up with an implementation that would retain the functionality using redis only -- I sincerely apologize to anyone who have used it.
+- `timeout` and `pollingInterval` have defaults. Locks are now allowed to lock indefinitely (except with work around mentioned in "Lock Options" section above).
 
 ## Contribution
-
 You are welcome to [open a ticket](https://github.com/AmrSaber/simple-redis-mutex/issues) anytime, if you find a bug or have a feature request.
 
 Also feel free to create a PR to **dev** branch for bug fixes or feature suggestions.
