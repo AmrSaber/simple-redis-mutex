@@ -17,6 +17,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
 
     // Bundler options
     "outDir": "dist"
