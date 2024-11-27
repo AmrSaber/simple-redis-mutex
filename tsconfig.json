@@ -3,9 +3,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
-    "allowJs": true,
-    "checkJs": false,
+    "declaration": true,
 
     // Enable latest features
     "lib": ["ES2016"],
@@ -22,5 +20,5 @@
     // Bundler options
     "outDir": "dist"
   },
-  "exclude": ["node_modules"]
+  "include": ["src"]
 }

@@ -1,12 +1,18 @@
 {
   "name": "simple-redis-mutex",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Mutex lock implemented using redis",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "npx rimraf dist && tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "prepublishOnly": "npm run build"
   },
   "author": {
     "name": "Amr Saber",
