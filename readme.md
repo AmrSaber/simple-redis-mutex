@@ -187,7 +187,7 @@ Breaking Changes in v2:
   - `retryTimeMillis` -> `pollingInterval` -- and it is now only used for expired locks, other wise pub/sub is used with released locks
   - `failAfterMillis` -> `failAfter`
 - FIFO option has been removed: existing implementation was wrong, it failed on lock-holder crash or failing to acquire the lock, and I could not come up with an implementation that would retain the functionality using redis only -- I sincerely apologize to anyone who have used it.
-- `timeout` and `pollingInterval` have defaults. Locks are now allowed to lock indefinitely (except with work around mentioned in "Lock Options" section above).
+- `timeout` and `pollingInterval` have defaults. Locks are not allowed to lock indefinitely (except with work around mentioned in "Lock Options" section above).
 
 ## Contribution
 You are welcome to [open a ticket](https://github.com/AmrSaber/simple-redis-mutex/issues) anytime, if you find a bug or have a feature request.
