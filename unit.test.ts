@@ -6,15 +6,15 @@ describe('Lock tests', () => {
   const lockName = '_test_lock';
 
   function sleep(millis?: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, millis);
-    });
+    return new Promise((res) => setTimeout(res, millis));
   }
 
   beforeAll(async () => {
     redis = await createClient({ url: process.env.REDIS_URI })
       .on('error', (err) => console.log('Redis Client Error', err))
       .connect();
+
+    await redis.select(7); // So that main db is not updated and later flushed
   });
 
   afterAll(async () => {
@@ -32,6 +32,25 @@ describe('Lock tests', () => {
 
       [hasLock] = await tryLock(redis, lockName);
       expect(hasLock).toEqual(false);
+    });
+
+    test('it works when script is flushed', async () => {
+      let [hasLock, release] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(true);
+      await release();
+
+      [hasLock, release] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(true);
+
+      await redis.scriptFlush();
+
+      [hasLock] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(false);
+
+      await release();
+
+      [hasLock] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(true);
     });
 
     test('no race conditions', async () => {

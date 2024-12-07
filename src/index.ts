@@ -133,14 +133,32 @@ export async function tryLock(
   let released = false;
   async function release() {
     if (released) return;
-    released = true;
+
+    if (!isRedisClient(redis)) {
+      await redis.eval(releaseScript, {
+        keys: [lockKey, REDIS_RELEASES_CHANNEL],
+        arguments: [lockValue],
+      });
+
+      released = true;
+      return;
+    }
+
+    // If it's redis client, cache the script and use its SHA
+    if (scriptHash == null) scriptHash = await redis.scriptLoad(releaseScript);
 
     await redis
-      .eval(releaseScript, {
+      .evalSha(scriptHash, {
         keys: [lockKey, REDIS_RELEASES_CHANNEL],
         arguments: [lockValue],
       })
-      .catch((err) => console.error(`Error releasing lock ${lockName}:`, err));
+      .catch((err: Error) => {
+        if (err.message.includes('NOSCRIPT')) scriptHash = null; // Signal script flushed
+        else throw err;
+      });
+
+    if (scriptHash == null) await release(); // If script flushed, try again
+    released = true;
   }
 
   return [true, release];
@@ -175,6 +193,13 @@ async function listenForUpdates(redis: RedisClient) {
 function getLockKey(lockName: string): string {
   return `@simple-redis-mutex:lock-${lockName}`;
 }
+
+function isRedisClient(redis: RedisClient): redis is RedisClientType<any, any, any> {
+  // @ts-expect-error script load does not exist on redis cluster
+  return typeof redis.scriptLoad == 'function';
+}
+
+let scriptHash: string | null = null;
 
 /**
  * Release the lock only if it has the same lockValue as acquireLock sets it.
