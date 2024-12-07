@@ -27,11 +27,29 @@ describe('Lock tests', () => {
 
   describe('tryLock', () => {
     test('it acquires the lock successfully', async () => {
-      let [hasLock] = await tryLock(redis, lockName);
+      let [hasLock, release] = await tryLock(redis, lockName);
       expect(hasLock).toEqual(true);
 
-      [hasLock] = await tryLock(redis, lockName);
+      expect(release.fencingToken).toBeDefined();
+      expect(release.fencingToken).toBeGreaterThan(0);
+
+      [hasLock, release] = await tryLock(redis, lockName);
       expect(hasLock).toEqual(false);
+
+      expect(release.fencingToken).not.toBeDefined();
+    });
+
+    test('it issues monotonic fencing tokens', async () => {
+      let lastToken: number | null = null;
+
+      for (let i = 0; i < 10; i++) {
+        let [hasLock, release] = await tryLock(redis, lockName);
+        expect(hasLock).toEqual(true);
+        await release();
+
+        if (lastToken != null) expect(lastToken).toBeLessThan(release.fencingToken!);
+        lastToken = release.fencingToken!;
+      }
     });
 
     test('it works when script is flushed', async () => {

@@ -60,7 +60,7 @@ async function someFunction() {
   const release = await lock(redis, 'resource-name');
 
   // Do some operations that require mutex lock
-  await doSomeCriticalOperations();
+  await doSomeCriticalOperations({ fencingToken: release.fencingToken! });
 
   // Release the lock
   await release();
@@ -72,7 +72,7 @@ async function someOtherFunction() {
   if (!hasLock) return; // Lock is already acquired
 
   // Do some operations that require mutex lock
-  await doSomeCriticalOperations();
+  await doSomeCriticalOperations({ fencingToken: release.fencingToken! });
 
   // Release the lock
   await release();
@@ -150,6 +150,11 @@ function tryLock(
 ): Promise<[boolean, ReleaseFunc]> 
 ```
 
+### `ReleaseFunc`
+```typescript
+export type ReleaseFunc = (() => Promise<void>) & { fencingToken?: number };
+```
+
 ## Notes
 
 ### Redis Client
@@ -173,6 +178,16 @@ Once a lock is released a pub/sub channel is used to notify any process waiting 
 A dedicated subscriber is created and managed in the background to manage subscribing to the pub/sub channel. It is created as a duplicate of provided redis client, and it stops whenever the provided client stops.
 
 Only one subscriber is created at a time. If the client stops and reconnects for whatever reason, then subscriber will stop with it and will reconnect on next lock use.
+
+### Fencing Token
+A fencing token is an increasing number that is used to identify the order at which locks are acquired, and is used for further safety with writes in distributed systems. See "Making the lock safe with fencing" section from [this article](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more info about fencing tokens.
+
+If the lock is successfully acquired then a fencing token is sure to be assigned, otherwise no fencing token will be issued if the lock is not acquired.
+
+Fencing tokens can be access from `release` function like `release.fencingToken`, it is undefined only if lock was not acquired.
+
+Fencing tokens are global across all locks issued and not scoped with lock name. Application logic should only depend on the fencing token increasing and not care about the exact value of the token.
+
 
 ### Double Releasing
 Once `release` function has been called all following calls are no-op, so same function cannot release the lock again from a different holder.

@@ -5,7 +5,7 @@ type RedisClient = RedisClientType<any, any, any> | RedisClusterType<any, any, a
 type ReleaseCallbackFn = () => void;
 type ReleaseCallback = { lockKey: string; callback: ReleaseCallbackFn };
 
-export type ReleaseFunc = () => Promise<void>;
+export type ReleaseFunc = (() => Promise<void>) & { fencingToken?: number };
 export type TryLockOptions = { timeout?: number };
 export type LockOptions = TryLockOptions & {
   pollingInterval?: number;
@@ -14,6 +14,7 @@ export type LockOptions = TryLockOptions & {
 };
 
 const REDIS_RELEASES_CHANNEL = '@simple-redis-mutex:locks-releases';
+const REDIS_FENCING_TOKENS_COUNTER = '@simple-redis-mutex:fencing-tokens';
 const REDIS_OK = 'OK';
 
 export const DEFAULT_TIMEOUT = 30_000;
@@ -131,7 +132,7 @@ export async function tryLock(
   if (result != REDIS_OK) return [false, async () => {}];
 
   let released = false;
-  async function release() {
+  const release: ReleaseFunc = async function () {
     if (released) return;
 
     if (!isRedisClient(redis)) {
@@ -159,7 +160,9 @@ export async function tryLock(
 
     if (scriptHash == null) await release(); // If script flushed, try again
     released = true;
-  }
+  };
+
+  release.fencingToken = await redis.incr(REDIS_FENCING_TOKENS_COUNTER);
 
   return [true, release];
 }
