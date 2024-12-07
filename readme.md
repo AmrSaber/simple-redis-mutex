@@ -179,12 +179,17 @@ A dedicated subscriber is created and managed in the background to manage subscr
 
 Only one subscriber is created at a time. If the client stops and reconnects for whatever reason, then subscriber will stop with it and will reconnect on next lock use.
 
+### Refresh lock timeout
+At any point when using the lock if you need more time before the lock expires you can call `await release.refreshTimeout()` to reset the lock's timeout. e.g. if lock timeout was 5 seconds, and after 4 seconds you realize that you need more time to finish the task and you call `refreshTimeout` then lock timeout is reset to 5 seconds again.
+
+If a process holds a lock and it is released or expired then that process calling `refreshTimeout` has no effect. Same thing if lock was not acquired in the first place (with `tryLock`) then `refreshTimeout` will have no effect.
+
 ### Fencing Token
 A fencing token is an increasing number that is used to identify the order at which locks are acquired, and is used for further safety with writes in distributed systems. See "Making the lock safe with fencing" section from [this article](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more info about fencing tokens.
 
-If the lock is successfully acquired then a fencing token is sure to be assigned, otherwise no fencing token will be issued if the lock is not acquired.
+If the lock is successfully acquired then a fencing token is issued, otherwise no fencing token will be issued or assigned if the lock is not acquired.
 
-Fencing tokens can be access from `release` function like `release.fencingToken`, it is undefined only if lock was not acquired.
+Fencing tokens can be access from `release` function like `release.fencingToken`, it is -1 only if lock was not acquired.
 
 Fencing tokens are global across all locks issued and not scoped with lock name. Application logic should only depend on the fencing token increasing and not care about the exact value of the token.
 

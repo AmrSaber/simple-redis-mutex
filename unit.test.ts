@@ -36,19 +36,19 @@ describe('Lock tests', () => {
       [hasLock, release] = await tryLock(redis, lockName);
       expect(hasLock).toEqual(false);
 
-      expect(release.fencingToken).not.toBeDefined();
+      expect(release.fencingToken).toEqual(-1);
     });
 
     test('it issues monotonic fencing tokens', async () => {
       let lastToken: number | null = null;
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 25; i++) {
         let [hasLock, release] = await tryLock(redis, lockName);
         expect(hasLock).toEqual(true);
         await release();
 
-        if (lastToken != null) expect(lastToken).toBeLessThan(release.fencingToken!);
-        lastToken = release.fencingToken!;
+        if (lastToken != null) expect(lastToken).toBeLessThan(release.fencingToken);
+        lastToken = release.fencingToken;
       }
     });
 
@@ -88,15 +88,24 @@ describe('Lock tests', () => {
     });
 
     test('lock expiration', async () => {
-      let [hasLock] = await tryLock(redis, lockName, { timeout: 50 });
+      const options: TryLockOptions = { timeout: 25 };
+
+      let [hasLock, release] = await tryLock(redis, lockName, options);
       expect(hasLock).toEqual(true);
 
-      [hasLock] = await tryLock(redis, lockName);
+      [hasLock] = await tryLock(redis, lockName, options);
       expect(hasLock).toEqual(false);
 
-      await sleep(55);
+      await sleep(30);
 
-      [hasLock] = await tryLock(redis, lockName);
+      [hasLock] = await tryLock(redis, lockName, options);
+      expect(hasLock).toEqual(true);
+
+      await sleep(10);
+      await release.refreshTimeout(); // should has no effect
+      await sleep(20);
+
+      [hasLock] = await tryLock(redis, lockName, options);
       expect(hasLock).toEqual(true);
     });
 
@@ -125,6 +134,22 @@ describe('Lock tests', () => {
       [hasLock, release] = await tryLock(redis, lockName, options);
       expect(hasLock).toEqual(true);
       await release();
+    });
+
+    test('refresh expire', async () => {
+      const [, release] = await tryLock(redis, lockName, { timeout: 50 });
+
+      await sleep(35);
+      await release.refreshTimeout();
+
+      let [hasLock] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(false);
+
+      await sleep(35);
+      await release.refreshTimeout();
+
+      [hasLock] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(false);
     });
   });
 

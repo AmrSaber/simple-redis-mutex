@@ -5,7 +5,7 @@ type RedisClient = RedisClientType<any, any, any> | RedisClusterType<any, any, a
 type ReleaseCallbackFn = () => void;
 type ReleaseCallback = { lockKey: string; callback: ReleaseCallbackFn };
 
-export type ReleaseFunc = (() => Promise<void>) & { fencingToken?: number };
+export type ReleaseFunc = (() => Promise<void>) & { fencingToken: number; refreshTimeout: () => Promise<void> };
 export type TryLockOptions = { timeout?: number };
 export type LockOptions = TryLockOptions & {
   pollingInterval?: number;
@@ -129,7 +129,13 @@ export async function tryLock(
     PX: timeout,
   });
 
-  if (result != REDIS_OK) return [false, async () => {}];
+  if (result != REDIS_OK) {
+    const dummyRelease: ReleaseFunc = () => Promise.resolve();
+    dummyRelease.refreshTimeout = () => Promise.resolve();
+    dummyRelease.fencingToken = -1;
+
+    return [false, dummyRelease];
+  }
 
   let released = false;
   const release: ReleaseFunc = async function () {
@@ -163,6 +169,14 @@ export async function tryLock(
   };
 
   release.fencingToken = await redis.incr(REDIS_FENCING_TOKENS_COUNTER);
+  release.refreshTimeout = async () => {
+    if (released || (await redis.get(lockKey)) != lockValue) {
+      released = true;
+      return; // Check if lock is released
+    }
+
+    await redis.pExpire(lockKey, timeout);
+  };
 
   return [true, release];
 }
