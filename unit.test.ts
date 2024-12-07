@@ -39,6 +39,22 @@ describe('Lock tests', () => {
       expect(release.fencingToken).toEqual(-1);
     });
 
+    test('release works without script cache', async () => {
+      const scriptLoad = redis.scriptLoad;
+      // @ts-ignore
+      redis.scriptLoad = null;
+
+      let [hasLock, release] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(true);
+
+      await release();
+
+      [hasLock, release] = await tryLock(redis, lockName);
+      expect(hasLock).toEqual(true);
+
+      redis.scriptLoad = scriptLoad;
+    });
+
     test('it issues monotonic fencing tokens', async () => {
       let lastToken: number | null = null;
 

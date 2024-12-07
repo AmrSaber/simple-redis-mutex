@@ -141,12 +141,13 @@ export async function tryLock(
   const release: ReleaseFunc = async function () {
     if (released) return;
 
-    if (!isRedisClient(redis)) {
-      await redis.eval(releaseScript, {
-        keys: [lockKey, REDIS_RELEASES_CHANNEL],
-        arguments: [lockValue],
-      });
+    const evalParams = {
+      keys: [lockKey, REDIS_RELEASES_CHANNEL],
+      arguments: [lockValue],
+    };
 
+    if (!isRedisClient(redis)) {
+      await redis.eval(releaseScript, evalParams);
       released = true;
       return;
     }
@@ -154,15 +155,10 @@ export async function tryLock(
     // If it's redis client, cache the script and use its SHA
     if (scriptHash == null) scriptHash = await redis.scriptLoad(releaseScript);
 
-    await redis
-      .evalSha(scriptHash, {
-        keys: [lockKey, REDIS_RELEASES_CHANNEL],
-        arguments: [lockValue],
-      })
-      .catch((err: Error) => {
-        if (err.message.includes('NOSCRIPT')) scriptHash = null; // Signal script flushed
-        else throw err;
-      });
+    await redis.evalSha(scriptHash, evalParams).catch((err: Error) => {
+      if (err.message.includes('NOSCRIPT')) scriptHash = null; // Signal script flushed
+      else throw err;
+    });
 
     if (scriptHash == null) await release(); // If script flushed, try again
     released = true;
