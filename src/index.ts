@@ -1,6 +1,6 @@
 import { RedisClientType, RedisClusterType } from 'redis';
 
-type RedisClient = RedisClientType<any, any, any> | RedisClusterType<any, any, any>;
+type RedisClient = RedisClientType<any, any, any, any> | RedisClusterType<any, any, any, any>;
 
 type ReleaseCallbackFn = () => void;
 type ReleaseCallback = { lockKey: string; callback: ReleaseCallbackFn };
@@ -198,7 +198,7 @@ async function listenForUpdates(redis: RedisClient) {
 
   redis.on('end', async () => {
     await subscriber?.unsubscribe(REDIS_RELEASES_CHANNEL);
-    await subscriber?.quit();
+    await subscriber?.close();
     subscriber = undefined;
   });
 }
@@ -208,7 +208,6 @@ function getLockKey(lockName: string): string {
 }
 
 function isRedisClient(redis: RedisClient): redis is RedisClientType<any, any, any> {
-  // @ts-expect-error script load does not exist on redis cluster
   return typeof redis.scriptLoad == 'function';
 }
 

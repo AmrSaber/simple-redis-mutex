@@ -2,7 +2,7 @@ import { createClient, RedisClientType } from 'redis';
 import { lock, LockOptions, tryLock, TryLockOptions } from './src';
 
 describe('Lock tests', () => {
-  let redis: RedisClientType<any, any, any>;
+  let redis: RedisClientType<any, any, any, any>;
   const lockName = '_test_lock';
 
   function sleep(millis?: number): Promise<void> {
@@ -11,7 +11,7 @@ describe('Lock tests', () => {
 
   beforeAll(async () => {
     redis = await createClient({ url: process.env.REDIS_URI })
-      .on('error', (err) => console.log('Redis Client Error', err))
+      .on('error', (err) => console.error('Redis Client Error', err))
       .connect();
 
     await redis.select(7); // So that main db is not updated and later flushed
@@ -52,6 +52,7 @@ describe('Lock tests', () => {
       [hasLock, release] = await tryLock(redis, lockName);
       expect(hasLock).toEqual(true);
 
+      // @ts-ignore
       redis.scriptLoad = scriptLoad;
     });
 
