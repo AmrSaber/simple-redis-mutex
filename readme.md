@@ -199,6 +199,9 @@ Once `release` function has been called all following calls are no-op, so same f
 
 It's also taken into consideration that an expired lock cannot be released so it does not release the lock from another holder. i.e. if process A acquires the lock, then it expires, then process B acquires the lock. When process A tries to release the lock, it will not be released, as it's now acquired by B.
 
+### No Order Guarantees
+This package does not guarantee that waiting tasks will execute in the same order they are waiting, the task that acquires the lock after it's been released is selected at random. See [this issue](https://github.com/AmrSaber/simple-redis-mutex/issues/19) for an example. If you need to guarantee the order, you should use a blocking queue and not a mutex.
+
 ### Migration from v1.x
 Breaking Changes in v2:
 - Redis client is now `redis` and not `ioredis`
